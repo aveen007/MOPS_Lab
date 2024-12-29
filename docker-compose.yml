@@ -1,0 +1,25 @@
+services:
+  # mongo:
+  #   image: mongo
+  #   ports:
+  #     - "27017:27017"
+
+  # rabbitmq:
+  #   image: rabbitmq:management
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+
+  data_simulator:
+    build: 
+      context: ./data_simulator
+    depends_on:
+      - iot_controller
+  iot_controller:
+    build: 
+      context: ./iot_controller
+    ports:
+      - "5000:5000"
+  #   depends_on:
+  #     - mongo
+  #     - rabbitmq
