@@ -7,6 +7,7 @@ WORKDIR /app
 
 COPY simulator.py ./simulator.py
 
-RUN pip install requests
+RUN pip install requests aiohttp
+
 
 CMD ["python", "simulator.py"]

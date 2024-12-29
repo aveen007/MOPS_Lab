@@ -1,3 +1,7 @@
-Flask
+fastapi
 pymongo
 pika
+motor
+hypercorn
+pydantic
+pydantic[email]

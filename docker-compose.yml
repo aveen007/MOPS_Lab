@@ -1,8 +1,15 @@
 services:
-  # mongo:
-  #   image: mongo
-  #   ports:
-  #     - "27017:27017"
+  mongo:
+    image: mongo
+    restart: on-failure
+    # environment:
+    #   MONGO_INITDB_ROOT_USERNAME: aveen
+    #   MONGO_INITDB_ROOT_PASSWORD: mops
+    ports:
+      - "27017:27017"
+    networks:
+      - mops
+      
 
   # rabbitmq:
   #   image: rabbitmq:management
@@ -15,11 +22,18 @@ services:
       context: ./data_simulator
     depends_on:
       - iot_controller
+    networks:
+      - mops
   iot_controller:
     build: 
       context: ./iot_controller
     ports:
       - "5000:5000"
-  #   depends_on:
-  #     - mongo
+    depends_on:
+      - mongo
+    networks:
+      - mops
   #     - rabbitmq
+networks:
+  mops:
+    driver: bridge
