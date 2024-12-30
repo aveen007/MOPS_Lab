@@ -7,6 +7,6 @@ WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt --upgrade
 
-COPY app.py app.py
+COPY . .
 EXPOSE 5000
 CMD ["hypercorn", "app:app", "--bind", "0.0.0.0:5000", "--worker-class", "asyncio","--reload"]
