@@ -1,0 +1,6 @@
+pika
+motor
+aiormq
+pydantic
+pydantic[email]
+prometheus_client

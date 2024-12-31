@@ -11,10 +11,8 @@ services:
       - mops
     depends_on:
       - rabbitmq
-      
-
   rabbitmq:
-    image: rabbitmq:management
+    image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -27,6 +25,9 @@ services:
       context: ./data_simulator
     depends_on:
       - iot_controller
+    restart: always
+    ports:
+      - "8070:8070"
     networks:
       - mops
   iot_controller:
@@ -34,11 +35,29 @@ services:
       context: ./iot_controller
     ports:
       - "5000:5000"
+    restart: on-failure
+    
     depends_on:
       - mongo
+      - rabbitmq
     networks:
       - mops
   #     - rabbitmq
+  rule_engine:
+    build:
+      context: ./rule_engine
+    restart: always
+    ports:
+      - "8080:8080"
+    develop:
+      watch:
+        - action: sync+restart
+          path: .
+          target: .
+    depends_on:
+      - iot_controller
+    networks:
+      - mops 
 networks:
   mops:
     driver: bridge
