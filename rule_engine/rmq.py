@@ -1,15 +1,15 @@
 import aiormq, asyncio
 import time
 import pika
-from db import IoTData
+from db import IoTData, instant,ongoing,db
 import json
+from promethuous import INSTANT_RULES_COUNTER,ONGOING_RULES_COUNTER
 rabbitmq_host = 'rabbitmq'
 
 
 # Establish connection to RabbitMQ
 async def connect():
     try:
-        print("hi")
         connection = await aiormq.connect("amqp://rabbitmq:5672/")
 
         channel =await connection.channel(publisher_confirms=False)
@@ -34,6 +34,39 @@ async def parse_message(message_body:bytes):
         # Validate the data using IoTData schema
         iot_data = IoTData(**message_data)
         print(f"Received IoTData: {iot_data}")
+        # if (iot_data.device_id==42):
+        if iot_data.x_factor <= 5:
+            INSTANT_RULES_COUNTER.inc()
+            await instant.insert_one({
+                "device_id": iot_data.device_id,
+                "alpha": iot_data.x_factor,
+            })
+
+        current_id_stack = ongoing[f"{iot_data.device_id}_stack"]
+        await current_id_stack.insert_one(message_data)
+
+        pipeline = [
+            {"$match": {"device_id": iot_data.device_id, "age": {"$gte": 42}}},
+            {"$count": "total_count"}
+        ]
+        result = await current_id_stack.aggregate(pipeline).to_list(length=None)
+
+        if result:
+            total_count = result[0]['total_count']
+            if total_count >= 5:
+                ONGOING_RULES_COUNTER.inc()
+                await ongoing.insert_one({
+                    "device_id": iot_data.device_id,
+                    "timestamp": str(time.time())
+                })
+
+                await db.drop_collection(current_id_stack)
+
+
+            if await current_id_stack.count_documents({}) >= 10:
+                await db.drop_collection(current_id_stack)
+
+        # await message.channel.basic_ack(message.delivery_tag)
 
         # TODO
         # Save to a database, trigger other actions, etc.
@@ -48,7 +81,6 @@ async def parse_message(message_body:bytes):
 # Set up the consumer
 async def callback( message: aiormq.abc.DeliveredMessage):
     try:
-        print("Yaoza")
         await parse_message(message.body)
     except Exception as e:
         await message.channel.basic_nack(message.delivery_tag)

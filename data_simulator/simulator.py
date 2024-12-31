@@ -43,7 +43,7 @@ def generate_data():
         "name": f"{first_name} {last_name}",
         "email": email,
         "age": random.randint(18, 80),
-        "x_factor": round(random.uniform(0.1, 10.0), 2)
+        "x_factor": round(random.uniform(0.1, 50.0), 2)
     }
 
 async def send_data(session, url):

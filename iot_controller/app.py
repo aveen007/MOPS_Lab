@@ -14,6 +14,8 @@ async def receive_data(request: Request):
         data = await request.json()
         # print(data)
         validated_data = IoTData(**data)
+        if (validated_data.age<21):
+            raise HTTPException(501,"declined service, age <21")
         data_bytes = json.dumps(data).encode('utf-8')
         if validated_data.device_id not in device_channels:
             print("new device connected...")
@@ -36,10 +38,8 @@ async def receive_data(request: Request):
 
         return {"status": "success", "inserted_id": str(result.inserted_id)}
     except ValidationError as e:
-        print("shit", e)
         raise HTTPException(501, "please provide a correct name and email")
     except Exception as e:
-        print("oh shit ", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
