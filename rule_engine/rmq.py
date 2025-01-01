@@ -10,7 +10,8 @@ rabbitmq_host = 'rabbitmq'
 # Establish connection to RabbitMQ
 async def connect():
     try:
-        connection = await aiormq.connect("amqp://rabbitmq:5672/")
+        
+        connection = await aiormq.connect("amqp://aveen:mops@rabbitmq:5672/")
 
         channel =await connection.channel(publisher_confirms=False)
         await channel.basic_consume('validated_queue', callback)

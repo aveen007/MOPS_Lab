@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 5s
+scrape_configs:
+  - job_name: data_simulator
+    static_configs:
+      - targets:
+          - data_simulator:8070
+  - job_name: iot_controller
+    static_configs:
+      - targets:
+          - iot_controller:5000
+  - job_name: rule_engine
+    static_configs:
+      - targets:
+          - rule_engine:8080
+  - job_name: rabbitmq
+    static_configs:
+      - targets:
+        - rabbitmq:15692

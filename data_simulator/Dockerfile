@@ -4,8 +4,10 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
+COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt --upgrade
 
-COPY simulator.py ./simulator.py
+COPY . .
 
 RUN pip install requests aiohttp
 

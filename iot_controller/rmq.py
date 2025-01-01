@@ -5,7 +5,8 @@ def create_connection():
     rabbitmq_host = 'rabbitmq'
     while True:
         try:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq', port=5672,virtual_host='/'))
+            credentials = pika.PlainCredentials('aveen', 'mops')
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq', port=5672,virtual_host='/', credentials=credentials))
             
             return connection
         except pika.exceptions.AMQPConnectionError as e:

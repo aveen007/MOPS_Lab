@@ -4,7 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 
 # MongoDB setup
-mongo_client = AsyncIOMotorClient("mongodb://mongo:27017")
+mongo_client = AsyncIOMotorClient("mongodb://aveen:mops@mongo:27017/iot_db?authSource=admin")
 db = mongo_client.iot_db  # Specify the database
 # Data model for validation
 class IoTData(BaseModel):
