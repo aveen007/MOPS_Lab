@@ -7,12 +7,18 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mops
     ports:
       - "27017:27017"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - mops
     depends_on:
       - rabbitmq
     volumes:
     - mongo_data:/data/db
+   
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -24,9 +30,14 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: aveen
       RABBITMQ_DEFAULT_PASS: mops
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 30s
+      timeout: 30s
+      retries: 10
     networks:
       - mops
-
+   
   data_simulator:
     build: 
       context: ./data_simulator
@@ -37,6 +48,7 @@ services:
       - "8070:8070"
     volumes:
       - data_simulator:/data_simulator
+      - logs_data:/var/log/
     networks:
       - mops
   iot_controller:
@@ -47,10 +59,15 @@ services:
     restart: on-failure
     
     depends_on:
-      - mongo
-      - rabbitmq
+      rabbitmq:
+       condition: service_started
+      mongo:
+        condition: service_started
+
+        
     volumes:
       - iot_controller:/iot_controller
+      - logs_data:/var/log/
     networks:
       - mops
   rule_engine:
@@ -66,8 +83,11 @@ services:
           target: .
     depends_on:
       - iot_controller
+      - mongo
+      - rabbitmq
     volumes:
       - rule_engine:/rule_engine
+      - logs_data:/var/log/
     networks:
       - mops 
   prometheus:
@@ -90,6 +110,60 @@ services:
       - grafana_storage:/var/lib/grafana
     networks:
       - mops
+  elasticsearch:
+    image: elasticsearch:7.16.2
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m  #512 mb
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 1g # Set container memory limit to 1 GB
+    memswap_limit: 1g # Ensure no memory swapping
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data/
+    ports:
+      - "9200:9200"
+    networks:
+      - mops
+  logstash:
+    image: logstash:7.16.2
+    restart: always
+    environment:
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m  #512 mb
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    networks:
+      - mops
+    depends_on:
+      - elasticsearch
+  kibana:
+    image: kibana:7.16.2
+    ports:
+      - "5601:5601" 
+    environment:
+
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - mops
+    depends_on:
+      - elasticsearch
+  filebeat:
+    image: elastic/filebeat:7.16.2
+    command: filebeat -e -strict.perms=false
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - logs_data:/var/log
+    networks:
+      - mops
+    depends_on:
+      - logstash
 networks:
   mops:
     driver: bridge
@@ -101,4 +175,6 @@ volumes:
   iot_controller:
   data_simulator:
   grafana_storage:
+  logs_data:
+  elastic_data:
 

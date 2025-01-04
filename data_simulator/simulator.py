@@ -5,10 +5,18 @@ import time
 import asyncio
 import random
 import string
+import os
+import logging
 from promethuous import REQUESTS_TOTAL,REQUESTS_DURATION
 import time
 from prometheus_client import start_http_server
 
+logging.basicConfig(
+    filename='/var/log/data_simulator.log',
+    level=logging.INFO,
+    format='%(name)s - %(levelname)s - %(message)s',  
+    filemode='a'
+)
 
 def generate_data():
     first_names = ["John", "Jane", "Alex", "Emily", "Chris"]
@@ -56,12 +64,12 @@ async def send_data(session, url):
         try:
             start=time.time()
             async with session.post(url, json=data) as response:
-                print(f"Sent data: {data}, Response: {response.status}")
+                logging.info(f"Sent data , Response: {response.status}")
                 REQUESTS_TOTAL.labels(status="success").inc()
             end=time.time()
             REQUESTS_DURATION.observe(end-start)
         except Exception as e:
-            print(f"Error sending data: {e}")
+            logging.error(f"Error sending data: {e}")
         await asyncio.sleep(2)  # Send data every 2 seconds
 
 async def main():

@@ -4,6 +4,7 @@ import pika
 from db import IoTData, instant,ongoing,db
 import json
 from promethuous import INSTANT_RULES_COUNTER,ONGOING_RULES_COUNTER
+import logging
 rabbitmq_host = 'rabbitmq'
 
 
@@ -15,11 +16,12 @@ async def connect():
 
         channel =await connection.channel(publisher_confirms=False)
         await channel.basic_consume('validated_queue', callback)
+        logging.info("connected to rabbit mq")
         return connection, channel
         # Acknowledge the message
         # ch.basic_ack(delivery_tag=method.delivery_tag)
     except Exception as e:
-        print(f"Error in message handling: {e}")
+        logging.error(f"Error in message handling: {e}")
         await asyncio.sleep(2)
         # Optionally, reject the message without requeueing
         # ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
@@ -34,7 +36,7 @@ async def parse_message(message_body:bytes):
 
         # Validate the data using IoTData schema
         iot_data = IoTData(**message_data)
-        print(f"Received IoTData: {iot_data}")
+        logging.info(f"Received IoTData: {iot_data}")
         # if (iot_data.device_id==42):
         if iot_data.x_factor <= 5:
             INSTANT_RULES_COUNTER.inc()
@@ -42,9 +44,11 @@ async def parse_message(message_body:bytes):
                 "device_id": iot_data.device_id,
                 "alpha": iot_data.x_factor,
             })
+        logging.info(f"an instant rule was matched for the device with id: {iot_data.device_id}.")
 
         current_id_stack = ongoing[f"{iot_data.device_id}_stack"]
         await current_id_stack.insert_one(message_data)
+
 
         pipeline = [
             {"$match": {"device_id": iot_data.device_id, "age": {"$gte": 42}}},
@@ -60,6 +64,7 @@ async def parse_message(message_body:bytes):
                     "device_id": iot_data.device_id,
                     "timestamp": str(time.time())
                 })
+                logging.info(f"an ongoing rule was matched for the device  with the id  {iot_data.device_id}")
 
                 await db.drop_collection(current_id_stack)
 
@@ -69,14 +74,12 @@ async def parse_message(message_body:bytes):
 
         # await message.channel.basic_ack(message.delivery_tag)
 
-        # TODO
-        # Save to a database, trigger other actions, etc.
 
    
     except json.JSONDecodeError as e:
-       print(f"JSON decoding error: {e}")
+       logging.error(f"JSON decoding error: {e}")
     except Exception as e:
-       print(f"Unexpected error: {e}")
+       logging.error(f"Unexpected error: {e}")
 
 
 # Set up the consumer
