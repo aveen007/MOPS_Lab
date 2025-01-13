@@ -33,8 +33,8 @@ async def receive_data(request: Request):
             logging.error("declined, age must be >= 21")
             raise HTTPException(501,"declined, age must be >= 21")
         data_bytes = json.dumps(data).encode('utf-8')
+        REQUESTS_ACCEPTED.inc()
         if validated_data.device_id not in device_channels:
-            REQUESTS_ACCEPTED.inc()
             logging.info("new device connected...")
             rabbitmq_channel = create_channel_for_device(rmq_connection, validated_data.device_id)
         else:

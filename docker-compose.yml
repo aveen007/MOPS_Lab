@@ -106,6 +106,10 @@ services:
     restart: unless-stopped
     ports:
       - '3000:3000'
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer  # Set the default role for anonymous users (e.g., Viewer or Editor)
+      - GF_SECURITY_DISABLE_LOGIN_FORM=true # Optional: Disables login form completely
     volumes:
       - grafana_storage:/var/lib/grafana
     networks:

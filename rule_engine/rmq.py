@@ -37,7 +37,6 @@ async def parse_message(message_body:bytes):
         # Validate the data using IoTData schema
         iot_data = IoTData(**message_data)
         logging.info(f"Received IoTData: {iot_data}")
-        # if (iot_data.device_id==42):
         if iot_data.x_factor <= 5:
             INSTANT_RULES_COUNTER.inc()
             await instant.insert_one({
